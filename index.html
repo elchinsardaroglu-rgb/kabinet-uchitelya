@@ -1,0 +1,1058 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Кабинет учителя — 7 групп</title><style>body{font-family:Arial,sans-serif;background:#f3f5f8;margin:0;color:#1d2939}header{background:#fff;padding:18px 22px;border-bottom:1px solid #ddd;font-weight:800}main{max-width:1000px;margin:auto;padding:20px}.card{background:#fff;border:1px solid #ddd;border-radius:14px;padding:20px;margin:14px 0}.primary{display:inline-block;background:#175cd3;color:#fff;text-decoration:none;border:0;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer}.groupgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.groupbtn{display:block;background:#175cd3;color:#fff;text-decoration:none;border-radius:12px;padding:18px;font-weight:800;text-align:center;font-size:18px}.groupbtn:hover{filter:brightness(.95)}#cabinet{display:none}.journal{display:none}.journal:target{display:block}.journal table{border-collapse:collapse;width:100%;margin-top:12px}.journal th,.journal td{border:1px solid #ddd;padding:9px;text-align:left}.journal th{background:#f8fafc}.students{columns:2}.muted{color:#667085}.back{display:inline-block;margin-bottom:12px;color:#175cd3;font-weight:700;text-decoration:none}input{font:inherit;padding:11px;border:1px solid #bbb;border-radius:8px;width:180px;margin-right:8px}@media(max-width:650px){.students{columns:1}}
+#startScreen{display:block}.choicegrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.choice{border:1px solid #d0d5dd;border-radius:14px;padding:20px;background:#fff}.studentPanel{display:none}.studentTests .testcard{border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0}.secondary{display:inline-block;background:#fff;color:#175cd3;border:2px solid #175cd3;border-radius:10px;padding:11px 16px;font-weight:800;cursor:pointer}.wideinput{width:min(520px,92%)!important}.badge{display:inline-block;padding:6px 10px;border-radius:999px;background:#eef4ff;margin:4px 6px 4px 0;font-weight:700}</style><script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script><script src="https://cdn.jsdelivr.net/npm/mammoth@1.8.0/mammoth.browser.min.js"></script><script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script></head><body><header>УЧЕБНЫЙ КАБИНЕТ</header><main>
+<div id="startScreen" class="card"><h2>ВХОД</h2><div class="choicegrid">
+<div class="choice"><h3>УЧЕНИК</h3><p class="muted">Введи свой личный 4-значный код. Система сама определит имя, группу и вариант.</p><button class="primary" type="button" onclick="showStudentLogin()">ВОЙТИ КАК УЧЕНИК</button></div>
+<div class="choice"><h3>УЧИТЕЛЬ</h3><p class="muted">Доступ ко всем группам, тестам и результатам.</p><button class="secondary" type="button" onclick="showTeacherLogin()">КАБИНЕТ УЧИТЕЛЯ</button></div>
+</div></div>
+<div id="studentLogin" class="card studentPanel"><button class="secondary" type="button" onclick="backToStart()">← НАЗАД</button><h2>ВХОД УЧЕНИКА</h2><p>Личный 4-значный код:</p><input id="studentCode" class="wideinput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="Например: 5831"><button class="primary" type="button" onclick="studentLogin()">ВОЙТИ</button><p id="studentErr" style="color:#b42318;font-weight:700"></p></div>
+<div id="studentCabinet" class="card studentPanel"></div>
+<div id="login" class="card" style="display:none"><button class="secondary" type="button" onclick="backToStart()">← НАЗАД</button><h2>ВХОД УЧИТЕЛЯ</h2><p>Введите пароль:</p><input id="pw" type="password" inputmode="numeric" autocomplete="off"><button class="primary" type="button" onclick="unlock()">ВОЙТИ</button><p id="err" style="color:#b42318;font-weight:700"></p></div><div id="cabinet"><div class="card" style="padding:12px 16px;margin-bottom:10px"><button class="secondary" type="button" onclick="backToStart()">← НАЗАД / ВЫЙТИ ИЗ КАБИНЕТА УЧИТЕЛЯ</button></div><div id="menu" class="card"><h2>7 ГРУПП</h2><div style="margin:14px 0;padding:14px;border:2px solid #175cd3;border-radius:12px"><h3 style="margin-top:0">ТЕСТЫ</h3>
+<p><label><b>Название теста</b></label><br><input id="testName" type="text" placeholder="Например: DIDA 1 (I)" style="width:min(420px,90%);margin-top:6px"></p>
+<input id="testFile" type="file" accept=".html,.htm,.docx,.pdf,.txt" style="display:none"><button class="primary" type="button" onclick="document.getElementById('testFile').click()">1. ВЫБРАТЬ ФАЙЛ ТЕСТА</button><p id="testFileInfo" class="muted">Файл теста ещё не выбран.</p>
+<input id="answerFile" type="file" accept=".html,.htm,.docx,.pdf,.txt,.csv,.json" style="display:none"><button class="primary" type="button" onclick="document.getElementById('answerFile').click()">2. ВЫБРАТЬ ФАЙЛ ОТВЕТОВ</button><p id="answerFileInfo" class="muted">Файл ответов ещё не выбран.</p>
+<p><b>Кому назначить:</b></p>
+<div style="display:flex;gap:18px;flex-wrap:wrap;margin-bottom:12px"><label><input type="radio" name="assignMode" value="group" checked onchange="updateAssignMode()"> ВСЕЙ ГРУППЕ</label><label><input type="radio" name="assignMode" value="student" onchange="updateAssignMode()"> ОТДЕЛЬНОМУ УЧЕНИКУ</label></div>
+<div id="groupAssignBox"><p><b>Выбери группу или группы:</b></p><div id="assignGroups" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px"><label><input type="checkbox" value="1-1"> 1-1</label><label><input type="checkbox" value="1-2"> 1-2</label><label><input type="checkbox" value="2-1"> 2-1</label><label><input type="checkbox" value="2-2"> 2-2</label><label><input type="checkbox" value="2-3"> 2-3</label><label><input type="checkbox" value="3-1"> 3-1</label><label><input type="checkbox" value="3-2"> 3-2</label></div></div>
+<div id="studentAssignBox" style="display:none;border:1px solid #ddd;border-radius:10px;padding:12px;margin-bottom:14px"><p><b>Группа:</b><br><select id="assignStudentGroup" onchange="fillStudentSelect()" style="font:inherit;padding:10px;border:1px solid #bbb;border-radius:8px;margin-top:6px"><option value="">— ВЫБЕРИ ГРУППУ —</option><option>1-1</option><option>1-2</option><option>2-1</option><option>2-2</option><option>2-3</option><option>3-1</option><option>3-2</option></select></p><p><b>Ученик:</b><br><select id="assignStudentName" style="font:inherit;padding:10px;border:1px solid #bbb;border-radius:8px;margin-top:6px;max-width:100%"><option value="">— СНАЧАЛА ВЫБЕРИ ГРУППУ —</option></select></p></div>
+<button class="primary" type="button" id="saveTestBtn" onclick="saveTest()" style="font-size:18px;padding:15px 22px">3. СОХРАНИТЬ И НАЗНАЧИТЬ ТЕСТ</button><p id="saveStatus" style="font-weight:800"></p>
+<div id="deletePanel" style="margin-top:18px;padding:14px;border:2px solid #b42318;border-radius:12px;background:#fff5f5">
+<h3 style="margin-top:0;color:#b42318">УДАЛЕНИЕ ТЕСТА</h3>
+<p><b>1. Выбери тест:</b></p>
+<select id="deleteTestSelect" style="font:inherit;padding:11px;border:1px solid #bbb;border-radius:8px;max-width:100%;min-width:280px"><option value="">— ВЫБЕРИ ТЕСТ —</option></select>
+<p><button id="deleteSelectedBtn" class="primary" type="button" style="background:#b42318;font-size:17px">2. УДАЛИТЬ ВЫБРАННЫЙ ТЕСТ</button></p>
+<div id="deleteConfirmBox" style="display:none;padding:12px;border:2px solid #b42318;border-radius:10px;margin-top:10px;background:#fff"><p id="deleteConfirmText" style="font-weight:800;margin-top:0"></p><button id="deleteConfirmBtn" class="primary" type="button" style="background:#b42318">ПОДТВЕРДИТЬ УДАЛЕНИЕ</button> <button id="deleteCancelBtn" class="secondary" type="button">ОТМЕНА</button></div>
+<p id="deleteStatus" style="font-weight:800"></p>
+</div>
+<div id="savedTests" style="margin-top:16px"></div></div><div class="card"><h2>ЛИЧНЫЕ КОДЫ УЧЕНИКОВ</h2><p class="muted">Эти коды видны только в кабинете учителя. Ученик входит только по своему коду.</p><div id="codeManager"></div></div><p class="muted">Нажми на нужную группу.</p><div class="groupgrid"><a class="groupbtn" href="#g11">ГРУППА 1-1<br><small>8 учеников</small></a><a class="groupbtn" href="#g12">ГРУППА 1-2<br><small>8 учеников</small></a><a class="groupbtn" href="#g21">ГРУППА 2-1<br><small>7 учеников</small></a><a class="groupbtn" href="#g22">ГРУППА 2-2<br><small>7 учеников</small></a><a class="groupbtn" href="#g23">ГРУППА 2-3<br><small>8 учеников</small></a><a class="groupbtn" href="#g31">ГРУППА 3-1<br><small>8 учеников</small></a><a class="groupbtn" href="#g32">ГРУППА 3-2<br><small>7 учеников</small></a></div></div><section id="g11" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 1-1</h2><h3>Ученики</h3><ol class="students"><li>АЛИЕВА ЗАХРА</li><li>АЛИЕВА ЛЕЙЛА</li><li>ДЖУМАЕВ ХАЗРИ</li><li>МАИЛОВ ЭМИН</li><li>МАХМУДОВА РУЗИЯ</li><li>НЕЙМАТОВ НЕЙМАТ</li><li>НОВРУЗОВА НАЗРИН</li><li>РЗАЕВ КЯНАН</li></ol><h3>Результаты</h3><table id="tbl_g11"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g12" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 1-2</h2><h3>Ученики</h3><ol class="students"><li>АБДУЛЛАЗАДЕ КЯНАН</li><li>АБИЕВ МАГОМЕД</li><li>ГУЛИЕВА ЛЕЙЛА ИСМАИЛ КЫЗЫ</li><li>КОСАЕВ ЮСИФ</li><li>МАМЕДЛИ СУАДА</li><li>МУСАЗАДЕ МЕДИНА</li><li>ХАЛИЛ СУАД</li><li>ИСМАИЛЗАДЕ ИСМАИЛ</li></ol><h3>Результаты</h3><table id="tbl_g12"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g21" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 2-1</h2><h3>Ученики</h3><ol class="students"><li>АЙДЕМИРОВ МАГОМЕД</li><li>БАШИРОВ ЗИЯ</li><li>ИСКЕНДЕРОВА МАРЬЯМ</li><li>ИСМАИЛЗАДЕ ТАХМАСИБ</li><li>КАЗЫМОВ ШАХНАСИБ</li><li>КЕРИМЛИ ВУГАР</li><li>ПИРИЕВА ЭЛИФ</li></ol><h3>Результаты</h3><table id="tbl_g21"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g22" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 2-2</h2><h3>Ученики</h3><ol class="students"><li>АЛИЕВ РАУЛЬ</li><li>ГАРИБОВА ЗАХРА</li><li>ГУРБАНОВА НИГЯР</li><li>МАМЕДОВА АЙЛИН</li><li>МУРАТАЗАЕВ СУЭЛЬ</li><li>НАСИБЛИ САРА</li><li>ФАРАДЖАЗАДЕ ЗАХРА</li></ol><h3>Результаты</h3><table id="tbl_g22"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g23" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 2-3</h2><h3>Ученики</h3><ol class="students"><li>АБДИЕВ УМИД</li><li>АЛИЕВА СОНГЮЛЬ</li><li>АЛИЗАДЕ ХАДИДЖА</li><li>АЗАХЛЫ НАЗИМ</li><li>ИСКЕНДЕРЛИ ЧИЧЕК</li><li>МУХТАРОВА ТАРАНА</li><li>МУХТАРЛЫ СЕВДА</li><li>ОМАРЛИ ИЛЬКАЙ</li></ol><h3>Результаты</h3><table id="tbl_g23"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g31" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 3-1</h2><h3>Ученики</h3><ol class="students"><li>АЛИЕВА ЛЕЙЛИ</li><li>АВАДХ ИМРАН</li><li>ГАСАНОВ ГАСАН</li><li>ГАХРАМАНОВ ФАРРУХ</li><li>ИБРАГИМХАЛИЛОВА ЯГУТ</li><li>КУЛИЕВА ДЖАМИЛЯ</li><li>САЛИХОВ ТАМЕРЛАН</li><li>ЭМИНЛИ ТАРАНА</li></ol><h3>Результаты</h3><table id="tbl_g31"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section><section id="g32" class="card journal"><a class="back" href="#menu">← ВСЕ 7 ГРУПП</a><h2>ЖУРНАЛ · ГРУППА 3-2</h2><h3>Ученики</h3><ol class="students"><li>АЛИЕВА ХАДИДЖА</li><li>АХМЕДЗАДЕ РАГИМ</li><li>ГУЛЕВА ЛЕЙЛА НИЗАМИ КЫЗЫ</li><li>ДЖАФАРОВА ФАТИМА</li><li>МАГЕРРАМОВ РАСУЛ</li><li>МАМЕДЛИ ТОГРУЛ</li><li>РЗАГУЛУЗАДЕ МУРАД</li></ol><h3>Результаты</h3><table id="tbl_g32"><thead><tr><th>Ученик</th><th>Дата</th><th>Верно</th><th>Ошибки</th><th>Пропуски</th><th>Итог</th></tr></thead><tbody><tr><td colspan="6">Пока нет результатов</td></tr></tbody></table></section></div><script>function unlock(){var p=document.getElementById("pw").value;if(p!=="4748"){document.getElementById("err").textContent="Неверный пароль";return;}document.getElementById("login").style.display="none";document.getElementById("cabinet").style.display="block";location.hash="menu";loadResults();renderCodeManager();}
+function loadResults(){var gs=["1-1", "1-2", "2-1", "2-2", "2-3", "3-1", "3-2"];gs.forEach(function(g){try{var raw=localStorage.getItem("cabResults_"+g);var arr=raw?JSON.parse(raw):[];if(!Array.isArray(arr)||!arr.length)return;var id="tbl_g"+g.replace("-","");var tb=document.querySelector("#"+id+" tbody");if(!tb)return;tb.innerHTML="";arr.forEach(function(r){var tr=document.createElement("tr");var vals=[r.student||"",r.time||"",r.right??"",r.wrong??"",r.skip??"",Number.isFinite(Number(r.score))?Number(r.score).toFixed(2):""];vals.forEach(function(v){var td=document.createElement("td");td.textContent=v;tr.appendChild(td)});tb.appendChild(tr)});}catch(e){}});}
+document.getElementById("pw").addEventListener("keydown",function(e){if(e.key==="Enter")unlock();});
+document.getElementById("testFile").addEventListener("change",function(){var f=this.files&&this.files[0];document.getElementById("testFileInfo").textContent=f?("ТЕСТ: "+f.name):"Файл теста ещё не выбран."; if(f){var n=f.name.replace(/\.[^.]+$/,""); var el=document.getElementById("testName"); if(el && !el.value.trim()) el.value=n;}});
+document.getElementById("answerFile").addEventListener("change",function(){var f=this.files&&this.files[0];document.getElementById("answerFileInfo").textContent=f?("ОТВЕТЫ: "+f.name):"Файл ответов ещё не выбран.";});
+
+var DB_NAME="teacherCabinetDB", DB_VER=1, STORE="tests";
+function openDB(){return new Promise(function(resolve,reject){var r=indexedDB.open(DB_NAME,DB_VER);r.onupgradeneeded=function(){var db=r.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:"id",autoIncrement:true});};r.onsuccess=function(){resolve(r.result)};r.onerror=function(){reject(r.error)};});}
+async function saveTest(){
+  var status=document.getElementById("saveStatus");status.style.color="#b42318";status.textContent="";
+  var name=document.getElementById("testName").value.trim();
+  var tf=document.getElementById("testFile").files[0];var af=document.getElementById("answerFile").files[0];
+  if(!name && tf){name=tf.name.replace(/\.[^.]+$/,""); document.getElementById("testName").value=name;}
+  var mode=(document.querySelector('input[name="assignMode"]:checked')||{}).value||"group";
+  var groups=Array.from(document.querySelectorAll('#assignGroups input:checked')).map(function(x){return x.value});
+  var assignedStudent="", assignedStudentGroup="";
+  if(mode==="student"){assignedStudentGroup=document.getElementById("assignStudentGroup").value;assignedStudent=document.getElementById("assignStudentName").value;groups=assignedStudentGroup?[assignedStudentGroup]:[];}
+  if(!name){status.textContent="ВВЕДИ НАЗВАНИЕ ТЕСТА.";return}
+  if(!tf){status.textContent="ВЫБЕРИ ФАЙЛ ТЕСТА.";return}
+  if(!af){status.textContent="ВЫБЕРИ ФАЙЛ ОТВЕТОВ.";return}
+  if(mode==="group"&&!groups.length){status.textContent="ВЫБЕРИ ХОТЯ БЫ ОДНУ ГРУППУ.";return}
+  if(mode==="student"&&!assignedStudent){status.textContent="ВЫБЕРИ УЧЕНИКА.";return}
+  try{
+    var db=await openDB();
+    var rec={name:name,testName:tf.name,answerName:af.name,testFile:tf,answerFile:af,groups:groups,assignMode:mode,assignedStudent:assignedStudent,assignedStudentGroup:assignedStudentGroup,created:new Date().toLocaleString("ru-RU")};
+    await new Promise(function(resolve,reject){var tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).add(rec);tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error)}});
+    status.style.color="#067647";status.textContent="ТЕСТ СОХРАНЁН И НАЗНАЧЕН. ВЫБРАННЫЕ ПОЛЯ ОСТАВЛЕНЫ ДЛЯ ПРОВЕРКИ.";
+    /* ВАЖНО: после сохранения НЕ очищаем название, выбранные файлы,
+       режим назначения, группу и ученика. Это позволяет учителю сразу
+       видеть, что именно было сохранено и кому назначено. */
+    renderSavedTests();
+  }catch(e){status.textContent="НЕ УДАЛОСЬ СОХРАНИТЬ: "+(e&&e.message?e.message:e);}
+}
+async function getTestById(id){
+  var db=await openDB();
+  return await new Promise(function(resolve,reject){
+    var r=db.transaction(STORE,"readonly").objectStore(STORE).get(Number(id));
+    r.onsuccess=function(){resolve(r.result||null)};
+    r.onerror=function(){reject(r.error)};
+  });
+}
+
+async function getAllTestsWithKeys(){
+  var db=await openDB();
+  return await new Promise(function(resolve,reject){
+    var tx=db.transaction(STORE,"readonly"), store=tx.objectStore(STORE);
+    var valsReq=store.getAll(), keysReq=store.getAllKeys();
+    var vals=null, keys=null;
+    function done(){
+      if(vals!==null && keys!==null){
+        resolve(vals.map(function(v,i){
+          var copy=Object.assign({},v||{});
+          copy.__dbKey=keys[i];
+          return copy;
+        }));
+      }
+    }
+    valsReq.onsuccess=function(){vals=valsReq.result||[];done()};
+    keysReq.onsuccess=function(){keys=keysReq.result||[];done()};
+    valsReq.onerror=function(){reject(valsReq.error)};
+    keysReq.onerror=function(){reject(keysReq.error)};
+  });
+}
+async function deleteSavedTest(id){
+  try{
+    var t=await getTestById(id); if(!t){alert("ТЕСТ НЕ НАЙДЕН.");return;}
+    if(!window.confirm('ТОЧНО УДАЛИТЬ ТЕСТ «'+(t.name||'')+'»?\n\nУЧЕНИКИ БОЛЬШЕ НЕ БУДУТ ЕГО ВИДЕТЬ. СТАРЫЕ РЕЗУЛЬТАТЫ ОСТАНУТСЯ В ЖУРНАЛЕ.'))return;
+    var db=await openDB();
+    await new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,"readwrite");
+      tx.objectStore(STORE).delete(Number(id));
+      tx.oncomplete=function(){resolve()};
+      tx.onerror=function(){reject(tx.error)};
+      tx.onabort=function(){reject(tx.error||new Error("Транзакция отменена"))};
+    });
+    var st=document.getElementById("saveStatus");
+    if(st){st.style.color="#067647";st.textContent="ТЕСТ УДАЛЁН.";}
+    await renderSavedTests();
+  }catch(e){
+    console.error(e);
+    alert("НЕ УДАЛОСЬ УДАЛИТЬ ТЕСТ: "+(e&&e.message?e.message:e));
+  }
+}
+var DELETE_TEST_ROWS=[];
+var DELETE_PENDING_INDEX=null;
+async function readTestsByCursor(){
+  var db=await openDB();
+  return await new Promise(function(resolve,reject){
+    var rows=[];
+    var tx=db.transaction(STORE,"readonly");
+    var store=tx.objectStore(STORE);
+    var req=store.openCursor();
+    req.onsuccess=function(){
+      var cur=req.result;
+      if(cur){rows.push({key:cur.primaryKey,value:cur.value});cur.continue();}
+    };
+    req.onerror=function(){reject(req.error)};
+    tx.oncomplete=function(){resolve(rows)};
+    tx.onerror=function(){reject(tx.error)};
+  });
+}
+async function fillDeleteTestSelect(){
+  var sel=document.getElementById("deleteTestSelect"); if(!sel)return;
+  DELETE_TEST_ROWS=[]; DELETE_PENDING_INDEX=null;
+  var cb=document.getElementById("deleteConfirmBox"); if(cb)cb.style.display="none";
+  try{
+    DELETE_TEST_ROWS=await readTestsByCursor();
+    sel.innerHTML='<option value="">— ВЫБЕРИ ТЕСТ —</option>';
+    DELETE_TEST_ROWS.forEach(function(row,i){
+      var t=row.value||{};
+      var o=document.createElement('option');
+      o.value=String(i);
+      o.textContent=(t.name||('Тест '+(i+1)))+'  ['+(t.created||'без даты')+']';
+      sel.appendChild(o);
+    });
+  }catch(e){
+    sel.innerHTML='<option value="">Список недоступен</option>';
+    console.error(e);
+  }
+}
+function armDeleteSelectedTest(){
+  var sel=document.getElementById("deleteTestSelect"), st=document.getElementById("deleteStatus");
+  if(st){st.style.color="#b42318";st.textContent="";}
+  if(!sel || sel.value===""){if(st)st.textContent="СНАЧАЛА ВЫБЕРИ ТЕСТ.";return;}
+  var idx=Number(sel.value);
+  if(!DELETE_TEST_ROWS[idx]){if(st)st.textContent="СПИСОК ИЗМЕНИЛСЯ. ВЫБЕРИ ТЕСТ ЕЩЁ РАЗ.";fillDeleteTestSelect();return;}
+  DELETE_PENDING_INDEX=idx;
+  var box=document.getElementById("deleteConfirmBox"), txt=document.getElementById("deleteConfirmText");
+  if(txt)txt.textContent='ТОЧНО УДАЛИТЬ «'+(DELETE_TEST_ROWS[idx].value.name||'выбранный тест')+'»?';
+  if(box)box.style.display="block";
+}
+function cancelDeleteSelectedTest(){
+  DELETE_PENDING_INDEX=null;
+  var box=document.getElementById("deleteConfirmBox"); if(box)box.style.display="none";
+}
+async function confirmDeleteSelectedTest(){
+  var st=document.getElementById("deleteStatus");
+  var idx=DELETE_PENDING_INDEX;
+  if(idx===null || !DELETE_TEST_ROWS[idx]){if(st){st.style.color="#b42318";st.textContent="ВЫБЕРИ ТЕСТ ЗАНОВО.";}cancelDeleteSelectedTest();return;}
+  var targetKey=DELETE_TEST_ROWS[idx].key;
+  var targetName=(DELETE_TEST_ROWS[idx].value||{}).name||"Тест";
+  try{
+    var db=await openDB();
+    await new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,"readwrite");
+      var store=tx.objectStore(STORE);
+      var req=store.openCursor();
+      var found=false;
+      req.onsuccess=function(){
+        var cur=req.result;
+        if(!cur)return;
+        if(indexedDB.cmp(cur.primaryKey,targetKey)===0){
+          found=true;
+          var del=cur.delete();
+          del.onerror=function(){reject(del.error)};
+          return;
+        }
+        cur.continue();
+      };
+      req.onerror=function(){reject(req.error)};
+      tx.oncomplete=function(){ if(found) resolve(); else reject(new Error("Запись не найдена")); };
+      tx.onerror=function(){reject(tx.error)};
+      tx.onabort=function(){reject(tx.error||new Error("Операция отменена"))};
+    });
+    var rows=await readTestsByCursor();
+    var stillThere=rows.some(function(r){try{return indexedDB.cmp(r.key,targetKey)===0}catch(e){return false}});
+    if(stillThere)throw new Error("Запись осталась в базе");
+    if(st){st.style.color="#067647";st.textContent='ТЕСТ «'+targetName+'» УДАЛЁН.';}
+    cancelDeleteSelectedTest();
+    await renderSavedTests();
+  }catch(e){
+    console.error(e);
+    if(st){st.style.color="#b42318";st.textContent="НЕ УДАЛОСЬ УДАЛИТЬ: "+(e&&e.message?e.message:e);}
+  }
+}
+async function renderSavedTests(){
+  var box=document.getElementById("savedTests");if(!box)return;
+  try{
+    var db=await openDB();
+    var data=await new Promise(function(resolve,reject){
+      var tx=db.transaction(STORE,"readonly"), store=tx.objectStore(STORE);
+      var r1=store.getAll(), r2=store.getAllKeys(), vals=null, keys=null;
+      function done(){if(vals!==null&&keys!==null)resolve({vals:vals,keys:keys});}
+      r1.onsuccess=function(){vals=r1.result||[];done()};
+      r2.onsuccess=function(){keys=r2.result||[];done()};
+      r1.onerror=function(){reject(r1.error)};
+      r2.onerror=function(){reject(r2.error)};
+    });
+    box.innerHTML='<h3>СОХРАНЁННЫЕ ТЕСТЫ</h3>';
+    if(!data.vals.length){box.insertAdjacentHTML('beforeend','<p class="muted">Пока нет сохранённых тестов.</p>');await fillDeleteTestSelect();return;}
+    data.vals.forEach(function(t,i){
+      var key = (t && t.id!=null) ? t.id : data.keys[i];
+      var wrap=document.createElement('div');
+      wrap.style.cssText='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0';
+      var assigned=t.assignMode==='student' ? ((t.assignedStudent||'')+' ('+(t.assignedStudentGroup||'')+')') : ('группа '+((t.groups||[]).join(', ')));
+      wrap.innerHTML='<b>'+escapeHtml(t.name||'Без названия')+'</b><br><span class="muted">Тест: '+escapeHtml(t.testName||'')+' · Ответы: '+escapeHtml(t.answerName||'')+' · Назначено: '+escapeHtml(assigned)+' · '+escapeHtml(t.created||'')+'</span>';
+      var actions=document.createElement('div'); actions.style.marginTop='10px';
+      var btn=document.createElement('button');
+      btn.type='button'; btn.textContent='УДАЛИТЬ ТЕСТ';
+      btn.style.cssText='font:inherit;padding:10px 14px;border:0;border-radius:8px;background:#b42318;color:white;font-weight:800;cursor:pointer';
+      btn.addEventListener('click',function(ev){ev.preventDefault();ev.stopPropagation();deleteSavedTest(key);});
+      actions.appendChild(btn); wrap.appendChild(actions); box.appendChild(wrap);
+    });
+    await fillDeleteTestSelect();
+  }catch(e){console.error(e);box.innerHTML='<h3>СОХРАНЁННЫЕ ТЕСТЫ</h3><p class="muted">Список тестов пока недоступен.</p>'}
+}
+function escapeHtml(v){return String(v==null?'':v).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+
+const STUDENTS = [
+  {group:"1-1",name:"АЛИЕВА ЗАХРА",variant:"A",code:"5831"},{group:"1-1",name:"АЛИЕВА ЛЕЙЛА",variant:"B",code:"2746"},{group:"1-1",name:"ДЖУМАЕВ ХАЗРИ",variant:"C",code:"9153"},{group:"1-1",name:"МАИЛОВ ЭМИН",variant:"D",code:"4628"},{group:"1-1",name:"МАХМУДОВА РУЗИЯ",variant:"E",code:"7315"},{group:"1-1",name:"НЕЙМАТОВ НЕЙМАТ",variant:"F",code:"8462"},{group:"1-1",name:"НОВРУЗОВА НАЗРИН",variant:"H",code:"3197"},{group:"1-1",name:"РЗАЕВ КЯНАН",variant:"K",code:"6574"},
+  {group:"1-2",name:"АБДУЛЛАЗАДЕ КЯНАН",variant:"A",code:"5289"},{group:"1-2",name:"АБИЕВ МАГОМЕД",variant:"B",code:"1936"},{group:"1-2",name:"ГУЛИЕВА ЛЕЙЛА ИСМАИЛ КЫЗЫ",variant:"C",code:"8047"},{group:"1-2",name:"КОСАЕВ ЮСИФ",variant:"D",code:"3762"},{group:"1-2",name:"МАМЕДЛИ СУАДА",variant:"E",code:"6491"},{group:"1-2",name:"МУСАЗАДЕ МЕДИНА",variant:"F",code:"2578"},{group:"1-2",name:"ХАЛИЛ СУАД",variant:"H",code:"9346"},{group:"1-2",name:"ИСМАИЛЗАДЕ ИСМАИЛ",variant:"K",code:"4813"},
+  {group:"2-1",name:"АЙДЕМИРОВ МАГОМЕД",variant:"A",code:"7624"},{group:"2-1",name:"БАШИРОВ ЗИЯ",variant:"B",code:"3158"},{group:"2-1",name:"ИСКЕНДЕРОВА МАРЬЯМ",variant:"C",code:"6972"},{group:"2-1",name:"ИСМАИЛЗАДЕ ТАХМАСИБ",variant:"D",code:"8435"},{group:"2-1",name:"КАЗЫМОВ ШАХНАСИБ",variant:"E",code:"5294"},{group:"2-1",name:"КЕРИМЛИ ВУГАР",variant:"F",code:"1763"},{group:"2-1",name:"ПИРИЕВА ЭЛИФ",variant:"H",code:"9082"},
+  {group:"2-2",name:"АЛИЕВ РАУЛЬ",variant:"A",code:"3647"},{group:"2-2",name:"ГАРИБОВА ЗАХРА",variant:"B",code:"7159"},{group:"2-2",name:"ГУРБАНОВА НИГЯР",variant:"C",code:"2486"},{group:"2-2",name:"МАМЕДОВА АЙЛИН",variant:"D",code:"9371"},{group:"2-2",name:"МУРАТАЗАЕВ СУЭЛЬ",variant:"E",code:"6528"},{group:"2-2",name:"НАСИБЛИ САРА",variant:"F",code:"4195"},{group:"2-2",name:"ФАРАДЖАЗАДЕ ЗАХРА",variant:"H",code:"7863"},
+  {group:"2-3",name:"АБДИЕВ УМИД",variant:"A",code:"2357"},{group:"2-3",name:"АЛИЕВА СОНГЮЛЬ",variant:"B",code:"8914"},{group:"2-3",name:"АЛИЗАДЕ ХАДИДЖА",variant:"C",code:"5472"},{group:"2-3",name:"АЗАХЛЫ НАЗИМ",variant:"D",code:"1639"},{group:"2-3",name:"ИСКЕНДЕРЛИ ЧИЧЕК",variant:"E",code:"7248"},{group:"2-3",name:"МУХТАРОВА ТАРАНА",variant:"F",code:"3951"},{group:"2-3",name:"МУХТАРЛЫ СЕВДА",variant:"H",code:"8167"},{group:"2-3",name:"ОМАРЛИ ИЛЬКАЙ",variant:"K",code:"4529"},
+  {group:"3-1",name:"АЛИЕВА ЛЕЙЛИ",variant:"A",code:"6781"},{group:"3-1",name:"АВАДХ ИМРАН",variant:"B",code:"2394"},{group:"3-1",name:"ГАСАНОВ ГАСАН",variant:"C",code:"9517"},{group:"3-1",name:"ГАХРАМАНОВ ФАРРУХ",variant:"D",code:"5836"},{group:"3-1",name:"ИБРАГИМХАЛИЛОВА ЯГУТ",variant:"E",code:"1472"},{group:"3-1",name:"КУЛИЕВА ДЖАМИЛЯ",variant:"F",code:"8649"},{group:"3-1",name:"САЛИХОВ ТАМЕРЛАН",variant:"H",code:"3275"},{group:"3-1",name:"ЭМИНЛИ ТАРАНА",variant:"K",code:"7064"},
+  {group:"3-2",name:"АЛИЕВА ХАДИДЖА",variant:"A",code:"4187"},{group:"3-2",name:"АХМЕДЗАДЕ РАГИМ",variant:"B",code:"5923"},{group:"3-2",name:"ГУЛЕВА ЛЕЙЛА НИЗАМИ КЫЗЫ",variant:"C",code:"7816"},{group:"3-2",name:"ДЖАФАРОВА ФАТИМА",variant:"D",code:"2549"},{group:"3-2",name:"МАГЕРРАМОВ РАСУЛ",variant:"E",code:"6398"},{group:"3-2",name:"МАМЕДЛИ ТОГРУЛ",variant:"F",code:"1725"},{group:"3-2",name:"РЗАГУЛУЗАДЕ МУРАД",variant:"H",code:"8457"}
+];
+function updateAssignMode(){var mode=(document.querySelector('input[name="assignMode"]:checked')||{}).value||"group";document.getElementById("groupAssignBox").style.display=mode==="group"?"block":"none";document.getElementById("studentAssignBox").style.display=mode==="student"?"block":"none";}
+function fillStudentSelect(){var g=document.getElementById("assignStudentGroup").value, sel=document.getElementById("assignStudentName");var list=STUDENTS.filter(function(x){return x.group===g});sel.innerHTML='<option value="">— ВЫБЕРИ УЧЕНИКА —</option>'+list.map(function(x){return '<option value="'+escapeHtml(x.name)+'">'+escapeHtml(x.name)+' · вариант '+escapeHtml(x.variant)+'</option>'}).join('');}
+function normName(s){return String(s||"").trim().toUpperCase().replace(/Ё/g,"Е").replace(/\s+/g," ")}
+function studentKey(st){return st.group+"|"+st.name;}
+function getCodeMap(){try{return JSON.parse(localStorage.getItem("teacherStudentCodes")||"{}");}catch(e){return {};}}
+function saveCodeMap(m){localStorage.setItem("teacherStudentCodes",JSON.stringify(m));}
+function currentCode(st){var m=getCodeMap();return String(m[studentKey(st)]||st.code);}
+function renderCodeManager(){
+  var box=document.getElementById("codeManager");if(!box)return;
+  var rows=STUDENTS.map(function(st){return '<tr><td>'+escapeHtml(st.group)+'</td><td>'+escapeHtml(st.name)+'</td><td>'+escapeHtml(st.variant)+'</td><td><b>'+escapeHtml(currentCode(st))+'</b></td><td><button class="secondary" type="button" onclick="changeStudentCode(\''+escapeHtml(studentKey(st)).replace(/'/g,"&#39;")+'\')">СМЕНИТЬ КОД</button></td></tr>';}).join('');
+  box.innerHTML='<div style="overflow:auto"><table style="border-collapse:collapse;width:100%"><thead><tr><th style="border:1px solid #ddd;padding:8px">Группа</th><th style="border:1px solid #ddd;padding:8px">Ученик</th><th style="border:1px solid #ddd;padding:8px">Вариант</th><th style="border:1px solid #ddd;padding:8px">Код</th><th style="border:1px solid #ddd;padding:8px">Действие</th></tr></thead><tbody>'+rows.replace(/<td>/g,'<td style="border:1px solid #ddd;padding:8px">')+'</tbody></table></div>';
+}
+function changeStudentCode(key){
+  var st=STUDENTS.find(function(x){return studentKey(x)===key;});if(!st)return;
+  var proposed=prompt('НОВЫЙ 4-ЗНАЧНЫЙ КОД ДЛЯ '+st.name+':',currentCode(st));
+  if(proposed===null)return;proposed=String(proposed).replace(/\D/g,'');
+  if(proposed.length!==4){alert('КОД ДОЛЖЕН СОСТОЯТЬ ИЗ 4 ЦИФР.');return;}
+  var used=STUDENTS.some(function(x){return studentKey(x)!==key&&currentCode(x)===proposed;});
+  if(used){alert('ТАКОЙ КОД УЖЕ ЕСТЬ У ДРУГОГО УЧЕНИКА.');return;}
+  var m=getCodeMap();m[key]=proposed;saveCodeMap(m);renderCodeManager();alert('КОД ИЗМЕНЁН.');
+}
+function hideAllEntry(){["startScreen","studentLogin","studentCabinet","login"].forEach(id=>{var e=document.getElementById(id);if(e)e.style.display="none"});document.getElementById("cabinet").style.display="none"}
+function showStudentLogin(){hideAllEntry();document.getElementById("studentLogin").style.display="block";setTimeout(()=>document.getElementById("studentCode").focus(),50)}
+function showTeacherLogin(){hideAllEntry();document.getElementById("login").style.display="block";setTimeout(()=>document.getElementById("pw").focus(),50)}
+function backToStart(){hideAllEntry();document.getElementById("startScreen").style.display="block";location.hash=""}
+async function studentLogin(){
+  var err=document.getElementById("studentErr");err.textContent="";
+  var code=(document.getElementById("studentCode").value||"").replace(/\D/g,"");
+  if(code.length!==4){err.textContent="ВВЕДИ 4-ЗНАЧНЫЙ ЛИЧНЫЙ КОД.";return;}
+  var codeMap=getCodeMap();
+  var st=STUDENTS.find(function(x){return String(codeMap[studentKey(x)]||x.code)===code;});
+  window.CURRENT_STUDENT=st;
+  if(!st){err.textContent="КОД НЕ НАЙДЕН. ОБРАТИСЬ К УЧИТЕЛЮ.";return;}
+  hideAllEntry();
+  var box=document.getElementById("studentCabinet");box.style.display="block";
+  box.innerHTML='<button class="secondary" type="button" onclick="backToStart()">← ВЫЙТИ</button><h2>'+escapeHtml(st.name)+'</h2><p><span class="badge">ГРУППА '+escapeHtml(st.group)+'</span><span class="badge">ВАРИАНТ '+escapeHtml(st.variant)+'</span></p><h3>НАЗНАЧЕННЫЕ ТЕСТЫ</h3><div id="studentTests" class="studentTests"><p class="muted">Загрузка...</p></div>';
+  try{
+    var arr=await getAllTestsWithKeys();
+    var mine=arr.filter(function(t){if(t.assignMode==='student')return normName(t.assignedStudent)===normName(st.name)&&t.assignedStudentGroup===st.group;return Array.isArray(t.groups)&&t.groups.includes(st.group);});
+    var tb=document.getElementById("studentTests");
+    if(!mine.length){
+      tb.innerHTML='<p class="muted">Сейчас тебе не назначено ни одного теста.</p>';
+    }else{
+      tb.innerHTML=mine.map(function(t){
+        return '<div class="testcard"><b>'+escapeHtml(t.name)+'</b>'
+          +'<br><span class="muted">Назначено: '+escapeHtml(t.created||'')+'</span>'
+          +'<p><button class="primary" type="button" onclick="openAssignedTest('+JSON.stringify(t.__dbKey)+')">НАЧАТЬ ТЕСТ</button></p>'
+          +'</div>';
+      }).join('');
+    }
+  }catch(e){document.getElementById("studentTests").innerHTML='<p style="color:#b42318;font-weight:700">Не удалось загрузить назначенные тесты.</p>';}
+}
+async function renderStudentTests(st){
+  var box=document.getElementById("studentTests");
+  try{
+    var arr=await getAllTestsWithKeys();
+    var mine=arr.filter(function(t){if(t.assignMode==='student')return normName(t.assignedStudent)===normName(st.name)&&t.assignedStudentGroup===st.group;return Array.isArray(t.groups)&&t.groups.includes(st.group);});
+    if(!mine.length){box.innerHTML='<p class="muted">Сейчас тебе тесты не назначены.</p>';return}
+    box.innerHTML=mine.map(function(t){return '<div class="testcard"><b>'+escapeHtml(t.name)+'</b><p class="muted">Вариант: '+escapeHtml(st.variant)+'</p><button class="primary" type="button" onclick="openAssignedTest('+JSON.stringify(t.__dbKey)+')">НАЧАТЬ ТЕСТ</button></div>'}).join('');
+  }catch(e){box.innerHTML='<p class="muted">Не удалось открыть список тестов.</p>'}
+}
+
+function normalizeStudentAnswer(v){
+  var s=String(v==null?"":v).trim().toUpperCase().replace(/Ё/g,"Е");
+  s=s.replace(/[–—−]/g,"-").replace(/\s+/g,"");
+  s=s.replace(/[;]+/g,",");
+  if(/^[A-ZА-Я]$/.test(s))return s;
+  if(/^\d+(,\d+)+$/.test(s)){
+    return s.split(",").filter(Boolean).sort(function(a,b){return Number(a)-Number(b)}).join(",");
+  }
+  return s;
+}
+
+function xmlToParagraphs(xmlText){
+  var doc=new DOMParser().parseFromString(xmlText,"application/xml");
+  var ps=Array.from(doc.getElementsByTagNameNS("*","p"));
+  return ps.map(function(p){
+    return Array.from(p.getElementsByTagNameNS("*","t")).map(function(t){return t.textContent||""}).join("");
+  }).map(function(x){return x.trim()}).filter(Boolean);
+}
+
+
+
+async function renderDocxExact(file, container){
+  if(typeof docx!=="undefined" && docx.renderAsync){
+    container.innerHTML="";
+    await docx.renderAsync(
+      await file.arrayBuffer(),
+      container,
+      null,
+      {
+        inWrapper:true,
+        ignoreWidth:false,
+        ignoreHeight:false,
+        ignoreFonts:false,
+        breakPages:true,
+        renderHeaders:true,
+        renderFooters:true,
+        renderFootnotes:true,
+        renderEndnotes:true,
+        useBase64URL:true
+      }
+    );
+    Array.from(container.querySelectorAll("img")).forEach(function(img){
+      img.style.maxWidth="100%";
+      img.style.height="auto";
+    });
+    return true;
+  }
+  return false;
+}
+
+async function detectQuestionCount(file){
+  try{
+    var lines=await readFileLines(file);
+    var maxN=0;
+    lines.forEach(function(line){
+      var s=String(line||"").trim();
+      var m=s.match(/^(\d{1,3})\s*[.)]?\s*[А-ЯA-Z]/);
+      if(!m)m=s.match(/^(\d{1,3})\s+/);
+      if(m){
+        var n=Number(m[1]);
+        if(n>maxN && n<300)maxN=n;
+      }
+    });
+    return maxN||1;
+  }catch(e){return 1;}
+}
+
+async function renderDocxWithImages(file){
+  if(typeof mammoth==="undefined")throw new Error("Не удалось загрузить модуль отображения Word. Проверь интернет и открой кабинет ещё раз.");
+  var arrayBuffer=await file.arrayBuffer();
+  var result=await mammoth.convertToHtml(
+    {arrayBuffer:arrayBuffer},
+    {
+      convertImage:mammoth.images.inline(function(element){
+        return element.read("base64").then(function(imageBuffer){
+          return {src:"data:"+element.contentType+";base64,"+imageBuffer};
+        });
+      })
+    }
+  );
+  return result.value||"";
+}
+
+async function readDocxParagraphs(file){
+  if(typeof JSZip==="undefined")throw new Error("Не удалось загрузить модуль чтения Word. Проверь интернет и открой файл ещё раз.");
+  var zip=await JSZip.loadAsync(await file.arrayBuffer());
+  var part=zip.file("word/document.xml");
+  if(!part)throw new Error("Не найден текст документа Word.");
+  return xmlToParagraphs(await part.async("string"));
+}
+
+async function readFileLines(file){
+  var name=(file&&file.name||"").toLowerCase();
+  if(name.endsWith(".docx"))return await readDocxParagraphs(file);
+  if(name.endsWith(".json")){
+    var obj=JSON.parse(await file.text());
+    if(Array.isArray(obj))return obj.map(function(x,i){
+      if(typeof x==="string")return (i+1)+" — "+x;
+      return String((x.number||x.n||i+1))+" — "+String(x.answer||x.correct||x.value||"");
+    });
+    return Object.keys(obj).map(function(k){return k+" — "+obj[k]});
+  }
+  return (await file.text()).split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+}
+
+function parseAnswerKey(lines){
+  var key={};
+  var sequential=1;
+
+  function looksLikeBareAnswer(s){
+    var t=String(s||"").trim().toUpperCase().replace(/Ё/g,"Е");
+    if(!t)return false;
+    // Одиночный буквенный ответ: A, B, C, D, E (также кириллица А–Е).
+    if(/^[A-EА-Е]$/.test(t))return true;
+    // Открытый ответ номерами: 1,3,4 / 1; 3; 4 / 1 3 4.
+    if(/^\d+(?:\s*[,;]\s*\d+)+$/.test(t))return true;
+    // Формат "ТОЛЬКО 2".
+    if(/^ТОЛЬКО\s*\d+$/.test(t))return true;
+    return false;
+  }
+
+  lines.forEach(function(line){
+    var s=String(line||"").trim();
+    if(!s)return;
+
+    // Обычная нумерация, когда номер реально находится в тексте документа.
+    var m=s.match(/^\s*(\d+)\s*(?:[.)\-–—:]\s*|\s+)(.+?)\s*$/);
+    if(m){
+      var n=Number(m[1]), ans=String(m[2]||"").trim();
+      ans=ans.replace(/^[A-EА-Е]\s*[.)]\s*/i,"").trim();
+      if(ans){
+        key[n]=normalizeStudentAnswer(ans);
+        if(n>=sequential)sequential=n+1;
+      }
+      return;
+    }
+
+    // Word часто хранит автоматические номера отдельно от текста.
+    // Тогда программа видит только сами ответы. Считаем их по порядку.
+    if(looksLikeBareAnswer(s)){
+      while(key[sequential]!==undefined)sequential++;
+      key[sequential]=normalizeStudentAnswer(s);
+      sequential++;
+    }
+  });
+  return key;
+}
+
+function parseStudentAnswers(raw, maxN){
+  var out={};
+  var lines=String(raw||"").split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+  var sequential=1;
+  lines.forEach(function(line){
+    var m=line.match(/^\s*(\d+)\s*(?:[.)\-–—:]\s*|\s+)(.+?)\s*$/);
+    if(m){out[Number(m[1])]=normalizeStudentAnswer(m[2]);}
+    else{
+      while(out[sequential]!==undefined)sequential++;
+      out[sequential]=normalizeStudentAnswer(line);
+      sequential++;
+    }
+  });
+  return out;
+}
+
+function escapeHtml2(v){
+  return String(v==null?"":v).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]});
+}
+
+function saveStudentResult(st, testName, right, wrong, skip, total, details){
+  var score=total?right/total*100:0;
+  var key="cabResults_"+st.group;
+  var arr=[];
+  try{arr=JSON.parse(localStorage.getItem(key)||"[]");if(!Array.isArray(arr))arr=[];}catch(e){arr=[];}
+  arr.push({
+    student:st.name,
+    time:new Date().toLocaleString("ru-RU"),
+    right:right,
+    wrong:wrong,
+    skip:skip,
+    score:score,
+    test:testName||"",
+    details:details||[]
+  });
+  localStorage.setItem(key,JSON.stringify(arr));
+}
+
+async function showStudentTestWorkspace(rec,key){
+  var st=window.CURRENT_STUDENT;
+  if(!st){alert("Сначала войди как ученик.");return;}
+
+  var box=document.getElementById("studentCabinet");
+  var currentQuestion=1;
+  var answers={};
+  var questionNodes=[];
+  var totalQuestions=1;
+
+  box.innerHTML=
+    '<button class="secondary" type="button" onclick="backToStart()">← ВЫЙТИ</button>'
+    +'<button class="secondary" type="button" id="backStudentTests" style="margin-left:8px">← К СПИСКУ ТЕСТОВ</button>'
+    +'<h2>'+escapeHtml2(rec.name||"ТЕСТ")+'</h2>'
+    +'<p><span class="badge">ГРУППА '+escapeHtml2(st.group)+'</span><span class="badge">ВАРИАНТ '+escapeHtml2(st.variant)+'</span></p>'
+    +'<div id="qNav" style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin:12px 0">'
+      +'<button class="secondary" id="prevQuestion" type="button">← ПРЕДЫДУЩИЙ ВОПРОС</button>'
+      +'<b id="qCounter"></b>'
+      +'<span style="display:flex;gap:8px;align-items:center">'
+        +'<button class="secondary" id="nextReview" type="button">СЛЕДУЮЩИЙ →</button>'
+        +'<button class="primary" id="finishTestBtn" type="button" style="display:none">ЗАВЕРШИТЬ ТЕСТ И ПОКАЗАТЬ РЕЗУЛЬТАТ</button>'
+      +'</span>'
+    +'</div>'
+    +'<div id="questionViewport" style="position:relative;overflow:hidden;border:2px solid #175cd3;border-radius:12px;background:#fff;min-height:260px">'
+      +'<div id="testTextBox" style="position:relative;background:#fff"><b>Загрузка вопроса...</b></div>'
+    +'</div>'
+    +'<div id="answerPanel" style="position:relative;z-index:9999;margin:14px 0;border:2px solid #175cd3;border-radius:12px;padding:14px;background:#f8fbff">'
+      +'<h3 id="answerQuestionTitle" style="margin-top:0"></h3>'
+      +'<p class="muted">Для закрытого задания нажми A, B, C, D или E. Для открытого введи ответ в поле.</p>'
+      +'<div id="letterButtons" style="display:flex;gap:8px;flex-wrap:wrap;margin:10px 0"></div>'
+      +'<input id="singleAnswerInput" type="text" style="width:95%;font:inherit;padding:10px;border:1px solid #aaa;border-radius:8px" placeholder="Например: 1,3,4">'
+      +'<p><button class="primary" type="button" id="openAnswerNext">ОТПРАВИТЬ ОТКРЫТЫЙ ОТВЕТ И ПЕРЕЙТИ ДАЛЬШЕ</button></p>'
+      +'<p id="answerProgress" class="muted"></p>'
+      +'<div id="studentCheckResult"></div>'
+    +'</div>';
+
+  document.getElementById("backStudentTests").onclick=function(){studentLoginWithStudent(st);};
+
+  function findQuestionStarts(root){
+    var blocks=Array.from(root.querySelectorAll("p,h1,h2,h3,h4,h5,h6"));
+    var explicit=[];
+    var all=[];
+
+    function clean(s){
+      return String(s||"").replace(/\u00a0/g," ").replace(/\s+/g," ").trim();
+    }
+    function looksQuestionText(s){
+      s=clean(s);
+      if(!s)return false;
+      // У вопроса должен быть нормальный текст, а не просто "1", "2,5,6" и т.п.
+      var letters=(s.match(/[А-ЯЁA-Z]/g)||[]).length;
+      var lower=(s.match(/[а-яёa-z]/g)||[]).length;
+      return letters>=5 && letters>=lower*0.55;
+    }
+    function isBold(el){
+      try{
+        var w=parseInt(getComputedStyle(el).fontWeight,10);
+        if(Number.isFinite(w) && w>=600)return true;
+      }catch(e){}
+      return !!el.querySelector("b,strong");
+    }
+
+    blocks.forEach(function(el,idx){
+      var s=clean(el.textContent);
+      if(!s)return;
+      var m=s.match(/^(\d{1,3})\s*[.)]?\s*(.*)$/);
+      var rec={idx:idx,el:el,text:s,bold:isBold(el)};
+      all.push(rec);
+      if(m){
+        var n=Number(m[1]), rest=clean(m[2]);
+        if(n>=1 && n<=200 && looksQuestionText(rest)){
+          explicit.push({n:n,el:el,idx:idx,text:s});
+        }
+      }
+    });
+
+    // Убираем случайные внутренние номера: оставляем только возрастающие основные вопросы.
+    var accepted=[];
+    explicit.forEach(function(c){
+      if(!accepted.length){
+        if(c.n===1)accepted.push(c);
+        return;
+      }
+      var last=accepted[accepted.length-1];
+      if(c.n>last.n && c.n<=last.n+3)accepted.push(c);
+    });
+
+    // В Word номер иногда хранится как автоматическая нумерация и не попадает в textContent.
+    // Именно так оформлен вопрос 21 в тесте США-1: между 20 и 22 есть заголовок без видимого "21" в тексте XML.
+    // Если между соседними вопросами пропущен ровно один номер, ищем между ними жирный заголовок ВЕРХНИМ РЕГИСТРОМ
+    // и назначаем ему пропущенный номер.
+    var withGaps=[];
+    for(var i=0;i<accepted.length;i++){
+      var cur=accepted[i];
+      withGaps.push(cur);
+      if(i===accepted.length-1)continue;
+      var nxt=accepted[i+1];
+      if(nxt.n===cur.n+2){
+        var candidates=all.filter(function(x){
+          if(x.idx<=cur.idx || x.idx>=nxt.idx)return false;
+          if(!looksQuestionText(x.text))return false;
+          // Автоматическая нумерация Word может не быть жирной.
+          // Поэтому для пропущенного номера берём строку, которая выглядит как настоящий заголовок вопроса:
+          // много заглавных букв, не вариант A-E и не числовая комбинация ответа.
+          if(/^[A-EА-Е][.)\s]/i.test(x.text))return false;
+          if(/^\d+(?:\s*[,;]\s*\d+)+$/.test(x.text))return false;
+          var upper=(x.text.match(/[А-ЯЁA-Z]/g)||[]).length;
+          var lower=(x.text.match(/[а-яёa-z]/g)||[]).length;
+          if(upper<6 || upper<lower*1.5)return false;
+          return true;
+        });
+        if(candidates.length){
+          withGaps.push({n:cur.n+1,el:candidates[candidates.length-1].el,idx:candidates[candidates.length-1].idx,text:candidates[candidates.length-1].text});
+        }
+      }
+    }
+
+    // Дополнительная страховка для Word-файлов, где №21 хранится только как автоматический маркер списка.
+    // Если 20 и 22 найдены, а 21 нет — берём между ними последний вопросоподобный заголовок ВЕРХНИМ РЕГИСТРОМ.
+    var has20=withGaps.some(function(x){return x.n===20});
+    var has21=withGaps.some(function(x){return x.n===21});
+    var has22=withGaps.some(function(x){return x.n===22});
+    if(has20 && !has21 && has22){
+      var q20=withGaps.find(function(x){return x.n===20});
+      var q22=withGaps.find(function(x){return x.n===22});
+      var c21=all.filter(function(x){
+        if(x.idx<=q20.idx || x.idx>=q22.idx)return false;
+        if(/^[A-EА-Е][.)\s]/i.test(x.text))return false;
+        var upper=(x.text.match(/[А-ЯЁA-Z]/g)||[]).length;
+        var lower=(x.text.match(/[а-яёa-z]/g)||[]).length;
+        return upper>=8 && upper>lower*1.5 && x.text.length>=12;
+      });
+      if(c21.length){
+        var pick=c21[c21.length-1];
+        withGaps.push({n:21,el:pick.el,idx:pick.idx,text:pick.text});
+      }
+    }
+
+    withGaps.sort(function(a,b){return a.n-b.n});
+    var seen={};
+    return withGaps.filter(function(x){
+      if(seen[x.n])return false;
+      seen[x.n]=true; return true;
+    }).map(function(x){return {n:x.n,el:x.el};});
+  }
+
+  async function renderOriginal(){
+    var testBox=document.getElementById("testTextBox");
+    if(rec.testFile===rec.answerFile){
+      throw new Error("Файл теста совпадает с файлом ответов. Попроси учителя переназначить тест.");
+    }
+    var name=(rec.testFile&&rec.testFile.name||"").toLowerCase();
+
+    if(name.endsWith(".docx") && typeof docx!=="undefined" && docx.renderAsync){
+      testBox.innerHTML="";
+      await docx.renderAsync(await rec.testFile.arrayBuffer(),testBox,null,{
+        inWrapper:true,ignoreWidth:false,ignoreHeight:false,ignoreFonts:false,
+        breakPages:true,renderHeaders:true,renderFooters:true,useBase64URL:true
+      });
+      Array.from(testBox.querySelectorAll("img")).forEach(function(img){
+        img.style.maxWidth="100%"; img.style.height="auto";
+      });
+    }else if(name.endsWith(".docx")){
+      testBox.innerHTML=await renderDocxWithImages(rec.testFile);
+    }else{
+      var lines=await readFileLines(rec.testFile);
+      testBox.textContent=lines.join("\n");
+      testBox.style.whiteSpace="pre-wrap";
+    }
+
+    await new Promise(function(resolve){setTimeout(resolve,250);});
+    questionNodes=findQuestionStarts(testBox);
+
+    // Число вопросов берём по максимальному реальному номеру.
+    // Если Word спрятал один номер как автоматическую нумерацию, findQuestionStarts его восстанавливает.
+    var detected=await detectQuestionCount(rec.testFile);
+    var maxNode=questionNodes.length?Math.max.apply(null,questionNodes.map(function(x){return x.n;})):1;
+    totalQuestions=Math.max(detected,maxNode,1);
+
+    showQuestion(1);
+  }
+
+  function nodeForQuestion(n){
+    for(var i=0;i<questionNodes.length;i++) if(questionNodes[i].n===n) return questionNodes[i].el;
+    return null;
+  }
+
+  function showQuestion(n){
+    currentQuestion=Math.max(1,Math.min(totalQuestions,n));
+    var viewport=document.getElementById("questionViewport");
+    var testBox=document.getElementById("testTextBox");
+    var cur=nodeForQuestion(currentQuestion);
+    var next=nodeForQuestion(currentQuestion+1);
+
+    // Каждый раз сначала возвращаем документ в исходное положение для точного измерения.
+    testBox.style.transform="none";
+    viewport.style.overflow="hidden";
+    var baseRect=testBox.getBoundingClientRect();
+
+    if(cur){
+      var r1=cur.getBoundingClientRect();
+      var top=Math.max(0,r1.top-baseRect.top);
+      var height;
+
+      if(next){
+        var r2=next.getBoundingClientRect();
+        // Ровно от начала текущего вопроса до начала следующего.
+        // Следующий вопрос физически остаётся за границей окна и не виден.
+        height=Math.max(120,r2.top-r1.top-2);
+      }else{
+        // Последний найденный вопрос показываем полностью до конца документа.
+        height=Math.max(120,testBox.scrollHeight-top+4);
+      }
+
+      viewport.style.height=Math.ceil(height)+"px";
+      testBox.style.transform="translateY(-"+Math.floor(top)+"px)";
+    }else{
+      // Не уничтожаем содержимое теста: показываем служебное сообщение поверх.
+      viewport.style.height="180px";
+      testBox.style.transform="none";
+      var warn=document.getElementById("questionDetectWarn");
+      if(!warn){
+        warn=document.createElement("div");
+        warn.id="questionDetectWarn";
+        warn.style.cssText="position:absolute;inset:0;background:#fff;padding:24px;font-weight:800;color:#b42318;z-index:50";
+        viewport.appendChild(warn);
+      }
+      warn.textContent="НЕ УДАЛОСЬ ТОЧНО ОПРЕДЕЛИТЬ ВОПРОС № "+currentQuestion+".";
+    }
+    var oldWarn=document.getElementById("questionDetectWarn");
+    if(cur && oldWarn)oldWarn.remove();
+
+    document.getElementById("qCounter").textContent="ВОПРОС "+currentQuestion+" ИЗ "+totalQuestions;
+    document.getElementById("answerQuestionTitle").textContent="ОТВЕТ НА ВОПРОС № "+currentQuestion;
+    document.getElementById("answerProgress").textContent="Сохранено ответов: "+Object.keys(answers).length+" из "+totalQuestions;
+
+    var inp=document.getElementById("singleAnswerInput");
+    inp.value=answers[currentQuestion] && !/^[A-E]$/.test(answers[currentQuestion]) ? answers[currentQuestion] : "";
+
+    Array.from(document.querySelectorAll(".answerLetterBtn")).forEach(function(b){
+      b.style.outline=(answers[currentQuestion]===b.dataset.letter)?"3px solid #175cd3":"";
+    });
+
+    document.getElementById("prevQuestion").disabled=currentQuestion===1;
+    var nextBtn=document.getElementById("nextReview");
+    var finishBtn=document.getElementById("finishTestBtn");
+    var isLast=currentQuestion===totalQuestions;
+    nextBtn.style.display=isLast?"none":"inline-block";
+    nextBtn.disabled=!answers[currentQuestion];
+    finishBtn.style.display=isLast?"inline-block":"none";
+
+    viewport.scrollIntoView({behavior:"auto",block:"start"});
+  }
+
+  async function finishTest(){
+    var resultBox=document.getElementById("studentCheckResult");
+    if(resultBox){
+      resultBox.style.display="block";
+      resultBox.innerHTML='<p style="font-weight:800">ПРОВЕРЯЮ РЕЗУЛЬТАТ...</p>';
+    }
+    try{
+      var keyLines=await readFileLines(rec.answerFile);
+      var answerKey=parseAnswerKey(keyLines);
+      var nums=Object.keys(answerKey).map(Number).sort(function(a,b){return a-b});
+      if(!nums.length){
+        resultBox.innerHTML='<p style="color:#b42318;font-weight:800">ОТВЕТЫ СОХРАНЕНЫ. КЛЮЧ ОТВЕТОВ ПОКА НЕ РАСПОЗНАН.</p>';
+        return;
+      }
+      var right=0,wrong=0,skip=0,details=[];
+      nums.forEach(function(n){
+        var a=normalizeStudentAnswer(answers[n]||"");
+        var k=answerKey[n]||"";
+        if(!a){skip++;details.push(n+" — пропуск; верно: "+k);}
+        else if(a===k){right++;}
+        else{wrong++;details.push(n+" — ответ: "+a+"; верно: "+k);}
+      });
+      saveStudentResult(st,rec.name,right,wrong,skip,nums.length,details);
+      var pct=nums.length?Math.round(right/nums.length*100):0;
+      resultBox.innerHTML='<div style="border:2px solid #175cd3;border-radius:12px;padding:14px;background:#fff">'
+        +'<h3>РЕЗУЛЬТАТ</h3><p><b>Всего:</b> '+nums.length+' · <b>Верно:</b> '+right
+        +' · <b>Ошибки:</b> '+wrong+' · <b>Пропуски:</b> '+skip+' · <b>Итог:</b> '+pct+'%</p></div>';
+    }catch(e){
+      resultBox.innerHTML='<p style="color:#b42318;font-weight:800">ОТВЕТЫ СОХРАНЕНЫ, НО ПРОВЕРКА КЛЮЧА НЕ ЗАВЕРШЕНА.</p>';
+    }
+  }
+
+  async function recordAndAdvance(value){
+    value=normalizeStudentAnswer(value);
+    if(!value){alert("СНАЧАЛА ВЫБЕРИ ИЛИ ВВЕДИ ОТВЕТ.");return;}
+    answers[currentQuestion]=value;
+
+    if(currentQuestion<totalQuestions){
+      showQuestion(currentQuestion+1);
+    }else{
+      document.getElementById("answerProgress").textContent=
+        "Сохранено ответов: "+Object.keys(answers).length+" из "+totalQuestions+
+        ". Нажми «ЗАВЕРШИТЬ ТЕСТ И ПОКАЗАТЬ РЕЗУЛЬТАТ».";
+      var finishBtn=document.getElementById("finishTestBtn");
+      if(finishBtn){
+        finishBtn.style.display="inline-block";
+        finishBtn.scrollIntoView({behavior:"auto",block:"center"});
+      }
+    }
+  }
+
+  var letters=["A","B","C","D","E"];
+  document.getElementById("letterButtons").innerHTML=letters.map(function(l){
+    return '<button type="button" class="secondary answerLetterBtn" data-letter="'+l+'" style="min-width:60px;font-weight:800">'+l+'</button>';
+  }).join("");
+
+  Array.from(document.querySelectorAll(".answerLetterBtn")).forEach(function(btn){
+    btn.onclick=function(e){
+      e.preventDefault();
+      recordAndAdvance(btn.dataset.letter);
+    };
+  });
+
+  document.getElementById("openAnswerNext").onclick=function(e){
+    e.preventDefault();
+    recordAndAdvance(document.getElementById("singleAnswerInput").value);
+  };
+
+  document.getElementById("prevQuestion").onclick=function(){
+    if(currentQuestion>1) showQuestion(currentQuestion-1);
+  };
+
+  document.getElementById("nextReview").onclick=function(){
+    if(currentQuestion<totalQuestions && answers[currentQuestion]) showQuestion(currentQuestion+1);
+  };
+
+  document.getElementById("finishTestBtn").onclick=async function(e){
+    if(e)e.preventDefault();
+    if(currentQuestion!==totalQuestions){
+      showQuestion(totalQuestions);
+      return;
+    }
+    if(!answers[currentQuestion]){
+      alert("СНАЧАЛА ОТВЕТЬ НА ПОСЛЕДНИЙ ВОПРОС.");
+      return;
+    }
+    this.disabled=true;
+    this.textContent="ПРОВЕРЯЮ...";
+    await finishTest();
+    this.textContent="ТЕСТ ЗАВЕРШЁН";
+    document.getElementById("studentCheckResult").scrollIntoView({behavior:"auto",block:"center"});
+  };
+
+  try{
+    await renderOriginal();
+  }catch(e){
+    document.getElementById("testTextBox").innerHTML='<p style="color:#b42318;font-weight:800">НЕ УДАЛОСЬ ОТКРЫТЬ ТЕСТ: '+escapeHtml2(e.message||e)+'</p>';
+  }
+}
+async function studentLoginWithStudent(st){
+  window.CURRENT_STUDENT=st;
+  hideAllEntry();
+  var box=document.getElementById("studentCabinet");box.style.display="block";
+  box.innerHTML='<button class="secondary" type="button" onclick="backToStart()">← ВЫЙТИ</button><h2>'+escapeHtml(st.name)+'</h2><p><span class="badge">ГРУППА '+escapeHtml(st.group)+'</span><span class="badge">ВАРИАНТ '+escapeHtml(st.variant)+'</span></p><h3>НАЗНАЧЕННЫЕ ТЕСТЫ</h3><div id="studentTests" class="studentTests"><p class="muted">Загрузка...</p></div>';
+  try{
+    var arr=await getAllTestsWithKeys();
+    var mine=arr.filter(function(t){if(t.assignMode==='student')return normName(t.assignedStudent)===normName(st.name)&&t.assignedStudentGroup===st.group;return Array.isArray(t.groups)&&t.groups.includes(st.group);});
+    var tb=document.getElementById("studentTests");
+    if(!mine.length){tb.innerHTML='<p class="muted">Сейчас тебе не назначено ни одного теста.</p>';}
+    else{
+      tb.innerHTML=mine.map(function(t){
+        return '<div class="testcard"><b>'+escapeHtml(t.name)+'</b><br><span class="muted">Назначено: '+escapeHtml(t.created||'')+'</span><p><button class="primary" type="button" onclick="openAssignedTest('+JSON.stringify(t.__dbKey)+')">НАЧАТЬ ТЕСТ</button></p></div>';
+      }).join('');
+    }
+  }catch(e){document.getElementById("studentTests").innerHTML='<p style="color:#b42318;font-weight:700">Не удалось загрузить назначенные тесты.</p>';}
+}
+
+async function openAssignedTest(key){
+  try{
+    var db=await openDB();
+    var rec=await new Promise(function(resolve,reject){
+      var r=db.transaction(STORE,"readonly").objectStore(STORE).get(key);
+      r.onsuccess=function(){resolve(r.result||null)};
+      r.onerror=function(){reject(r.error)};
+    });
+    if(!rec){alert("ТЕСТ НЕ НАЙДЕН В БАЗЕ.");return;}
+    if(!rec.testFile){alert("ФАЙЛ ТЕСТА НЕ СОХРАНЁН.");return;}
+    if(!rec.answerFile){alert("ФАЙЛ ОТВЕТОВ НЕ СОХРАНЁН.");return;}
+    await showStudentTestWorkspace(rec,key);
+  }catch(e){
+    console.error(e);
+    alert("НЕ УДАЛОСЬ ОТКРЫТЬ ТЕСТ: "+(e&&e.message?e.message:e));
+  }
+}
+document.addEventListener("keydown",function(e){if(e.key==="Enter"&&document.getElementById("studentLogin").style.display==="block")studentLogin()});
+
+var oldUnlock=unlock;unlock=function(){oldUnlock();if(document.getElementById("cabinet").style.display==="block"){renderSavedTests();fillDeleteTestSelect();}};
+
+window.addEventListener("load",function(){try{document.getElementById("login").style.display="none";document.getElementById("cabinet").style.display="none";document.getElementById("studentLogin").style.display="none";document.getElementById("studentCabinet").style.display="none";document.getElementById("startScreen").style.display="block";}catch(e){}});
+
+(function(){
+  var b=document.getElementById("deleteSelectedBtn"); if(b)b.addEventListener("click",armDeleteSelectedTest);
+  var c=document.getElementById("deleteConfirmBtn"); if(c)c.addEventListener("click",confirmDeleteSelectedTest);
+  var x=document.getElementById("deleteCancelBtn"); if(x)x.addEventListener("click",cancelDeleteSelectedTest);
+})();
+
+
+/* ===== ОБЛАЧНАЯ СИНХРОНИЗАЦИЯ SUPABASE =====
+   Вставь ниже URL проекта и PUBLISHABLE/ANON KEY.
+   Пока они не вставлены, кабинет продолжает работать локально как раньше.
+*/
+var CLOUD_SUPABASE_URL = "https://hgcvzjeyyltafnfwyzzf.supabase.co";
+var CLOUD_SUPABASE_KEY = "sb_publishable_w5bNYi1R1b9GnJanlu1K5Q_haGV0Srg";
+var CLOUD_TESTS_TABLE = "cabinet_tests";
+var CLOUD_RESULTS_TABLE = "cabinet_results";
+var CLOUD_CODES_TABLE = "cabinet_codes";
+var CLOUD_CLIENT = null;
+
+function cloudConfigured(){
+  return /^https:\/\/.+\.supabase\.co$/i.test(CLOUD_SUPABASE_URL||"") &&
+         CLOUD_SUPABASE_KEY && !/PASTE_SUPABASE/i.test(CLOUD_SUPABASE_KEY);
+}
+function cloud(){
+  if(!cloudConfigured()) return null;
+  if(!CLOUD_CLIENT){
+    if(!window.supabase || !window.supabase.createClient) throw new Error("Модуль Supabase не загрузился");
+    CLOUD_CLIENT=window.supabase.createClient(CLOUD_SUPABASE_URL,CLOUD_SUPABASE_KEY);
+  }
+  return CLOUD_CLIENT;
+}
+function bytesToBase64(bytes){
+  var bin="", chunk=0x8000;
+  for(var i=0;i<bytes.length;i+=chunk) bin+=String.fromCharCode.apply(null,bytes.subarray(i,Math.min(i+chunk,bytes.length)));
+  return btoa(bin);
+}
+async function fileToBase64(file){return bytesToBase64(new Uint8Array(await file.arrayBuffer()));}
+function base64ToFile(b64,name,type){
+  var bin=atob(b64||""), arr=new Uint8Array(bin.length);
+  for(var i=0;i<bin.length;i++)arr[i]=bin.charCodeAt(i);
+  return new File([arr],name||"file",{type:type||"application/octet-stream"});
+}
+function cloudRowToTest(r){
+  return {
+    id:r.id,__dbKey:r.id,name:r.name||"",testName:r.test_name||"",answerName:r.answer_name||"",
+    testFile:base64ToFile(r.test_b64||"",r.test_name||"test",r.test_type||"application/octet-stream"),
+    answerFile:base64ToFile(r.answer_b64||"",r.answer_name||"answers",r.answer_type||"application/octet-stream"),
+    groups:Array.isArray(r.groups)?r.groups:(r.groups||[]),assignMode:r.assign_mode||"group",
+    assignedStudent:r.assigned_student||"",assignedStudentGroup:r.assigned_student_group||"",created:r.created_label||""
+  };
+}
+
+var LOCAL_saveTest=saveTest;
+saveTest=async function(){
+  if(!cloudConfigured()) return LOCAL_saveTest();
+  var status=document.getElementById("saveStatus"); status.style.color="#b42318";status.textContent="";
+  var name=document.getElementById("testName").value.trim();
+  var tf=document.getElementById("testFile").files[0], af=document.getElementById("answerFile").files[0];
+  if(!name && tf){name=tf.name.replace(/\.[^.]+$/,'');document.getElementById("testName").value=name;}
+  var mode=(document.querySelector('input[name="assignMode"]:checked')||{}).value||"group";
+  var groups=Array.from(document.querySelectorAll('#assignGroups input:checked')).map(function(x){return x.value});
+  var assignedStudent="",assignedStudentGroup="";
+  if(mode==="student"){assignedStudentGroup=document.getElementById("assignStudentGroup").value;assignedStudent=document.getElementById("assignStudentName").value;groups=assignedStudentGroup?[assignedStudentGroup]:[];}
+  if(!name){status.textContent="ВВЕДИ НАЗВАНИЕ ТЕСТА.";return}
+  if(!tf){status.textContent="ВЫБЕРИ ФАЙЛ ТЕСТА.";return}
+  if(!af){status.textContent="ВЫБЕРИ ФАЙЛ ОТВЕТОВ.";return}
+  if(mode==="group"&&!groups.length){status.textContent="ВЫБЕРИ ХОТЯ БЫ ОДНУ ГРУППУ.";return}
+  if(mode==="student"&&!assignedStudent){status.textContent="ВЫБЕРИ УЧЕНИКА.";return}
+  try{
+    status.style.color="#175cd3";status.textContent="СОХРАНЯЮ В ОБЩУЮ БАЗУ...";
+    var row={name:name,test_name:tf.name,answer_name:af.name,test_type:tf.type||"application/octet-stream",answer_type:af.type||"application/octet-stream",
+      test_b64:await fileToBase64(tf),answer_b64:await fileToBase64(af),groups:groups,assign_mode:mode,assigned_student:assignedStudent,
+      assigned_student_group:assignedStudentGroup,created_label:new Date().toLocaleString("ru-RU")};
+    var res=await cloud().from(CLOUD_TESTS_TABLE).insert(row).select('id').single();
+    if(res.error)throw res.error;
+    status.style.color="#067647";status.textContent="ТЕСТ СОХРАНЁН В ОБЩЕЙ БАЗЕ И БУДЕТ ВИДЕН С ТЕЛЕФОНА.";
+    await renderSavedTests();
+  }catch(e){status.style.color="#b42318";status.textContent="ОБЛАЧНОЕ СОХРАНЕНИЕ НЕ УДАЛОСЬ: "+(e&&e.message?e.message:e);}
+};
+
+var LOCAL_getAllTestsWithKeys=getAllTestsWithKeys;
+getAllTestsWithKeys=async function(){
+  if(!cloudConfigured())return LOCAL_getAllTestsWithKeys();
+  var res=await cloud().from(CLOUD_TESTS_TABLE).select('*').order('id',{ascending:true});
+  if(res.error)throw res.error;
+  return (res.data||[]).map(cloudRowToTest);
+};
+var LOCAL_getTestById=getTestById;
+getTestById=async function(id){
+  if(!cloudConfigured())return LOCAL_getTestById(id);
+  var res=await cloud().from(CLOUD_TESTS_TABLE).select('*').eq('id',Number(id)).maybeSingle();
+  if(res.error)throw res.error; return res.data?cloudRowToTest(res.data):null;
+};
+var LOCAL_readTestsByCursor=readTestsByCursor;
+readTestsByCursor=async function(){
+  if(!cloudConfigured())return LOCAL_readTestsByCursor();
+  var arr=await getAllTestsWithKeys();return arr.map(function(v){return {key:v.id,value:v};});
+};
+
+deleteSavedTest=async function(id){
+  if(!cloudConfigured()){
+    try{var t=await LOCAL_getTestById(id);if(!t){alert("ТЕСТ НЕ НАЙДЕН.");return;}if(!confirm('ТОЧНО УДАЛИТЬ ТЕСТ «'+(t.name||'')+'»?'))return;var db=await openDB();await new Promise(function(resolve,reject){var tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(Number(id));tx.oncomplete=resolve;tx.onerror=function(){reject(tx.error)}});await renderSavedTests();}catch(e){alert("НЕ УДАЛОСЬ УДАЛИТЬ ТЕСТ");}return;
+  }
+  try{
+    var t=await getTestById(id);if(!t){alert("ТЕСТ НЕ НАЙДЕН.");return;}
+    if(!confirm('ТОЧНО УДАЛИТЬ ТЕСТ «'+(t.name||'')+'»?\n\nУЧЕНИКИ БОЛЬШЕ НЕ БУДУТ ЕГО ВИДЕТЬ.'))return;
+    var res=await cloud().from(CLOUD_TESTS_TABLE).delete().eq('id',Number(id));if(res.error)throw res.error;
+    await renderSavedTests();
+  }catch(e){alert("НЕ УДАЛОСЬ УДАЛИТЬ ТЕСТ: "+(e.message||e));}
+};
+
+var LOCAL_renderSavedTests=renderSavedTests;
+renderSavedTests=async function(){
+  if(!cloudConfigured())return LOCAL_renderSavedTests();
+  var box=document.getElementById('savedTests');if(!box)return;
+  try{
+    var vals=await getAllTestsWithKeys();box.innerHTML='<h3>СОХРАНЁННЫЕ ТЕСТЫ · ОБЩАЯ БАЗА</h3>';
+    if(!vals.length){box.insertAdjacentHTML('beforeend','<p class="muted">Пока нет сохранённых тестов.</p>');await fillDeleteTestSelect();return;}
+    vals.forEach(function(t,i){var wrap=document.createElement('div');wrap.style.cssText='border:1px solid #ddd;border-radius:10px;padding:12px;margin:10px 0';var assigned=t.assignMode==='student'?((t.assignedStudent||'')+' ('+(t.assignedStudentGroup||'')+')'):('группа '+((t.groups||[]).join(', ')));wrap.innerHTML='<b>'+escapeHtml(t.name||'Без названия')+'</b><br><span class="muted">Тест: '+escapeHtml(t.testName||'')+' · Ответы: '+escapeHtml(t.answerName||'')+' · Назначено: '+escapeHtml(assigned)+' · '+escapeHtml(t.created||'')+'</span>';var actions=document.createElement('div');actions.style.marginTop='10px';var btn=document.createElement('button');btn.type='button';btn.textContent='УДАЛИТЬ ТЕСТ';btn.style.cssText='font:inherit;padding:10px 14px;border:0;border-radius:8px;background:#b42318;color:white;font-weight:800;cursor:pointer';btn.onclick=function(){deleteSavedTest(t.id)};actions.appendChild(btn);wrap.appendChild(actions);box.appendChild(wrap);});
+    await fillDeleteTestSelect();
+  }catch(e){box.innerHTML='<h3>СОХРАНЁННЫЕ ТЕСТЫ</h3><p style="color:#b42318;font-weight:700">Не удалось загрузить общую базу: '+escapeHtml(e.message||e)+'</p>';}
+};
+
+var LOCAL_confirmDeleteSelectedTest=confirmDeleteSelectedTest;
+confirmDeleteSelectedTest=async function(){
+  if(!cloudConfigured())return LOCAL_confirmDeleteSelectedTest();
+  var st=document.getElementById('deleteStatus'),idx=DELETE_PENDING_INDEX;
+  if(idx===null||!DELETE_TEST_ROWS[idx]){if(st)st.textContent='ВЫБЕРИ ТЕСТ ЗАНОВО.';cancelDeleteSelectedTest();return;}
+  var targetKey=DELETE_TEST_ROWS[idx].key,targetName=(DELETE_TEST_ROWS[idx].value||{}).name||'Тест';
+  try{var res=await cloud().from(CLOUD_TESTS_TABLE).delete().eq('id',Number(targetKey));if(res.error)throw res.error;if(st){st.style.color='#067647';st.textContent='ТЕСТ «'+targetName+'» УДАЛЁН ИЗ ОБЩЕЙ БАЗЫ.';}cancelDeleteSelectedTest();await renderSavedTests();}catch(e){if(st){st.style.color='#b42318';st.textContent='НЕ УДАЛОСЬ УДАЛИТЬ: '+(e.message||e);}}
+};
+
+var LOCAL_saveStudentResult=saveStudentResult;
+saveStudentResult=function(st,testName,right,wrong,skip,total,details){
+  LOCAL_saveStudentResult(st,testName,right,wrong,skip,total,details);
+  if(!cloudConfigured())return;
+  var score=total?right/total*100:0;
+  cloud().from(CLOUD_RESULTS_TABLE).insert({student:st.name,student_group:st.group,variant:st.variant,test_name:testName||'',time_label:new Date().toLocaleString('ru-RU'),right_count:right,wrong_count:wrong,skip_count:skip,total_count:total,score:score,details:details||[]}).then(function(r){if(r.error)console.error('cloud result',r.error)});
+};
+var LOCAL_loadResults=loadResults;
+loadResults=async function(){
+  if(!cloudConfigured())return LOCAL_loadResults();
+  try{
+    var res=await cloud().from(CLOUD_RESULTS_TABLE).select('*').order('id',{ascending:true});if(res.error)throw res.error;
+    var gs=['1-1','1-2','2-1','2-2','2-3','3-1','3-2'];
+    gs.forEach(function(g){var tb=document.querySelector('#tbl_g'+g.replace('-','')+' tbody');if(tb)tb.innerHTML='<tr><td colspan="6">Пока нет результатов</td></tr>';});
+    gs.forEach(function(g){var rows=(res.data||[]).filter(function(r){return r.student_group===g});if(!rows.length)return;var tb=document.querySelector('#tbl_g'+g.replace('-','')+' tbody');if(!tb)return;tb.innerHTML='';rows.forEach(function(r){var tr=document.createElement('tr');[r.student||'',r.time_label||'',r.right_count??'',r.wrong_count??'',r.skip_count??'',Number(r.score||0).toFixed(2)].forEach(function(v){var td=document.createElement('td');td.textContent=v;tr.appendChild(td)});tb.appendChild(tr);});});
+  }catch(e){console.error(e);LOCAL_loadResults();}
+};
+
+/* Коды учеников: локальные значения остаются резервом, облако синхронизирует изменения. */
+var CLOUD_CODE_CACHE=null;
+var LOCAL_currentCode=currentCode, LOCAL_changeStudentCode=changeStudentCode;
+async function refreshCloudCodes(){
+  if(!cloudConfigured())return;
+  try{var res=await cloud().from(CLOUD_CODES_TABLE).select('*');if(res.error)throw res.error;CLOUD_CODE_CACHE={};(res.data||[]).forEach(function(r){CLOUD_CODE_CACHE[r.student_key]=String(r.code)});renderCodeManager();}catch(e){console.error(e);}
+}
+currentCode=function(st){if(CLOUD_CODE_CACHE&&CLOUD_CODE_CACHE[studentKey(st)])return CLOUD_CODE_CACHE[studentKey(st)];return LOCAL_currentCode(st);};
+changeStudentCode=async function(key){
+  if(!cloudConfigured())return LOCAL_changeStudentCode(key);
+  var st=STUDENTS.find(function(x){return studentKey(x)===key});if(!st)return;var proposed=prompt('НОВЫЙ 4-ЗНАЧНЫЙ КОД ДЛЯ '+st.name+':',currentCode(st));if(proposed===null)return;proposed=String(proposed).replace(/\D/g,'');if(proposed.length!==4){alert('КОД ДОЛЖЕН СОСТОЯТЬ ИЗ 4 ЦИФР.');return;}var used=STUDENTS.some(function(x){return studentKey(x)!==key&&currentCode(x)===proposed});if(used){alert('ТАКОЙ КОД УЖЕ ЕСТЬ У ДРУГОГО УЧЕНИКА.');return;}var res=await cloud().from(CLOUD_CODES_TABLE).upsert({student_key:key,code:proposed},{onConflict:'student_key'});if(res.error){alert('НЕ УДАЛОСЬ СОХРАНИТЬ КОД: '+res.error.message);return;}if(!CLOUD_CODE_CACHE)CLOUD_CODE_CACHE={};CLOUD_CODE_CACHE[key]=proposed;renderCodeManager();alert('КОД ИЗМЕНЁН В ОБЩЕЙ БАЗЕ.');
+};
+
+var ORIGINAL_studentLogin=studentLogin;
+studentLogin=async function(){
+  if(cloudConfigured() && CLOUD_CODE_CACHE===null)await refreshCloudCodes();
+  return ORIGINAL_studentLogin();
+};
+
+window.addEventListener('load',function(){
+  if(cloudConfigured())refreshCloudCodes();
+  else console.info('Облачная синхронизация пока не настроена: вставь Supabase URL и ANON/PUBLISHABLE KEY.');
+});
+
+</script></main></body></html>
